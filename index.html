@@ -1,151 +1,250 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html>
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Live Radio</title>
+  <title>★ MY WEB RADIO ★</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- Early-Internet / Geocities-inspired single-file page -->
   <style>
-    :root { --bg:#0b0c10; --card:#11131a; --fg:#e6e6e6; --muted:#9aa3af; }
-    *{ box-sizing:border-box }
-    body{
-      margin:0; min-height:100svh; display:grid; place-items:center;
-      background: radial-gradient(60% 60% at 50% 40%, #151826 0%, #0b0c10 70%);
-      color:var(--fg); font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
+    /* Tiled retro background using an inline SVG checkerboard (no external assets) */
+    body {
+      margin: 0;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='60' height='60'><rect width='60' height='60' fill='%23000022'/><rect x='0' y='0' width='30' height='30' fill='%230b0b46'/><rect x='30' y='30' width='30' height='30' fill='%230b0b46'/><rect x='28' y='28' width='4' height='4' fill='%23ffffff22'/></svg>");
+      color: #fff;
+      font-family: "Verdana", "Tahoma", system-ui, sans-serif;
     }
-    .wrap{
-      width: min(560px, 92vw); background:var(--card); padding:20px;
-      border-radius:18px; box-shadow: 0 10px 40px rgba(0,0,0,.4);
+
+    a { color: #00ffea; }
+
+    .page {
+      max-width: 900px;
+      margin: 20px auto;
+      border: 4px ridge #7fffd4;
+      background: linear-gradient(180deg, #111155 0%, #0b0b46 100%);
+      box-shadow: 0 0 0 4px #000, 0 0 18px #00ffff66 inset;
     }
-    h1{ margin:0 0 6px; font-size:1.2rem }
-    .sub{ margin:0 0 14px; color:var(--muted); font-size:.95rem }
-    .controls{ display:flex; gap:10px; align-items:center; margin:10px 0 6px }
-    button{
-      appearance:none; border:0; border-radius:9999px; padding:12px 18px;
-      background:#2563eb; color:white; font-weight:600; cursor:pointer;
+
+    .header {
+      background: linear-gradient(90deg, #1a1aff, #00ffff, #ff66ff);
+      color: #000;
+      padding: 8px 12px;
+      border-bottom: 4px ridge #7fffd4;
+      text-align: center;
+      text-shadow: 0 0 4px #fff;
     }
-    button[disabled]{ opacity:.6; cursor:not-allowed }
-    .status{ font-size:.9rem; color:var(--muted); margin-top:6px; min-height:1.2em }
-    .row{ display:flex; gap:12px; align-items:center; }
-    input[type="range"]{ width:100% }
-    .live-dot{ width:10px; height:10px; border-radius:50%; background:#ef4444; box-shadow:0 0 12px #ef4444aa; margin-right:6px }
-    .badge{ display:inline-flex; align-items:center; gap:6px; font-size:.8rem; color:#fca5a5; background:rgba(239,68,68,.08); padding:6px 10px; border-radius:999px }
-    a{ color:#9cc2ff; text-decoration:none }
-    .small{ font-size:.8rem; color:var(--muted); margin-top:10px }
+
+    .title { font-size: 28px; font-weight: 900; letter-spacing: 1px; }
+    .subtitle { font-size: 12px; font-weight: 700; }
+
+    .nav {
+      display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; padding: 10px;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 6px 12px;
+      background: linear-gradient(180deg, #fffb, #ddd8 50%, #9998);
+      color: #000;
+      border: 3px outset #eee;
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: 700;
+      box-shadow: 0 2px 0 #0008;
+    }
+    .btn:active { border-style: inset; box-shadow: none; }
+
+    .content { padding: 12px; }
+
+    .blink {
+      animation: blink 1s step-start infinite;
+    }
+    @keyframes blink { 50% { opacity: 0; } }
+
+    .marquee-wrap {
+      margin: 8px 0 12px;
+      border: 3px groove #66e2ff;
+      background: #00000066;
+      padding: 2px;
+    }
+
+    .panel {
+      border: 4px ridge #7fffd4;
+      background: #00000055;
+      padding: 12px;
+      box-shadow: inset 0 0 18px #00ffff33;
+    }
+
+    .cols { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; }
+    @media (max-width: 820px) { .cols { grid-template-columns: 1fr; } }
+
+    .hr-sparkle { height: 10px; background: repeating-linear-gradient(90deg, #00ffff, #00ffff 6px, #ff66ff 6px, #ff66ff 12px, #ffff66 12px, #ffff66 18px); border: 0; margin: 14px 0; box-shadow: 0 0 10px #00ffff66; }
+
+    .counter {
+      display: inline-block; padding: 4px 8px; background: #00000088; border: 3px inset #7fffd4; font-family: "Courier New", monospace; letter-spacing: 2px;
+    }
+
+    .footer { text-align: center; padding: 10px; font-size: 12px; color: #cde; }
+
+    /* Player styles */
+    .player {
+      border: 4px groove #ffd700;
+      background: radial-gradient(circle at 30% 20%, #222266, #101034 80%);
+      padding: 12px;
+    }
+    .player h2 { margin: 0 0 6px; font-size: 20px; text-shadow: 0 0 6px #00ffffaa; }
+    .row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .row label { font-size: 12px; color: #cfe; }
+    .row input[type="range"] { width: 160px; }
+
+    /* Fake stickers */
+    .sticker { display:inline-block; padding:4px 8px; border:3px ridge #fff; background:#ff0; color:#000; font-weight:800; transform: rotate(-3deg); text-shadow:none; }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="badge"><span class="live-dot"></span>Live</div>
-    <h1>My Radio Stream</h1>
-    <p class="sub">Tap play to listen.</p>
-
-    <div class="controls">
-      <button id="playBtn">▶️ Play</button>
-      <div class="row" style="flex:1">
-        <label for="vol" class="small" style="min-width:42px">Volume</label>
-        <input id="vol" type="range" min="0" max="1" step="0.01" value="0.9" />
+  <div class="page">
+    <div class="header">
+      <div class="title">★ WELCOME TO MY WEB RADIO ★</div>
+      <div class="subtitle">Best experienced on <span class="blink">Netscape</span> &amp; Internet Explorer™</div>
+      <div class="nav" aria-label="Site navigation">
+        <a class="btn" href="#home">Home</a>
+        <a class="btn" href="#schedule">Schedule</a>
+        <a class="btn" href="#contact">Guestbook</a>
+        <a class="btn" href="#links">Cool Links</a>
       </div>
-      <button id="muteBtn" title="Mute">🔇</button>
     </div>
 
-    <div class="status" id="status">Idle.</div>
+    <div class="content">
+      <div class="marquee-wrap">
+        <marquee behavior="scroll" direction="left" scrollamount="5">★ You are listening to <b>MY RADIO</b> — Broadcasting live 24/7 — Send your requests! ★</marquee>
+      </div>
 
-    <!-- Hidden audio element -->
-    <audio id="audio" preload="none"></audio>
+      <div class="cols">
+        <div class="panel player" id="home">
+          <h2>NOW PLAYING ▶</h2>
+          <p style="margin:6px 0 10px">Click <b>Play</b> to start the stream. If it stalls, the player will try to reconnect.<br><span class="sticker">UNDER CONSTRUCTION</span></p>
 
-    <p class="small">
-      If the stream stops, the player will try to reconnect automatically.
-    </p>
+          <!-- Audio element (native controls for retro authenticity) -->
+          <audio id="audio" preload="none" controls></audio>
+
+          <div class="row" style="margin-top:10px">
+            <button id="playBtn" class="btn">▶️ PLAY / PAUSE</button>
+            <label for="vol">VOLUME</label>
+            <input id="vol" type="range" min="0" max="1" step="0.01" value="0.9" />
+            <span id="status" style="font-size:12px; color:#bff;">Idle.</span>
+          </div>
+
+          <hr class="hr-sparkle" />
+
+          <div class="row" style="justify-content:space-between">
+            <div>📻 <b>Station:</b> My Radio Stream</div>
+            <div>🕒 <b>Live:</b> <span class="blink">ON AIR</span></div>
+          </div>
+        </div>
+
+        <div class="panel" id="links">
+          <h3 style="margin-top:0">HOTLINKS</h3>
+          <ul style="margin-top:6px">
+            <li><a href="#">Top 10 Hits</a></li>
+            <li><a href="#">DJ Profiles</a></li>
+            <li><a href="#">Request a Song</a></li>
+            <li><a href="#">Join Our Webring</a></li>
+          </ul>
+
+          <p style="margin:12px 0 6px">VISITORS:</p>
+          <div class="counter">00012345</div>
+        </div>
+      </div>
+
+      <hr class="hr-sparkle" />
+
+      <div class="panel" id="schedule">
+        <h3 style="margin-top:0">SCHEDULE</h3>
+        <table width="100%" border="1" cellspacing="0" cellpadding="6" style="border-color:#7fffd4">
+          <tr bgcolor="#001133"><th align="left">Time</th><th align="left">Show</th><th align="left">Host</th></tr>
+          <tr><td>All Day</td><td>Non‑Stop Mega Mix</td><td>DJ Byte</td></tr>
+          <tr><td>20:00</td><td>Request Hour</td><td>MC Modem</td></tr>
+          <tr><td>22:00</td><td>Night Drive</td><td>DJ Cascade</td></tr>
+        </table>
+      </div>
+
+      <div class="panel" id="contact" style="margin-top:12px">
+        <h3 style="margin-top:0">GUESTBOOK</h3>
+        <p>Sign our guestbook and tell us where you're tuning in from!</p>
+        <p><a class="btn" href="#">Sign Guestbook</a> <a class="btn" href="#">View Entries</a></p>
+      </div>
+    </div>
+
+    <div class="footer">© 1999–2025 My Radio • <a href="#">Email the Webmaster</a> • Best viewed at 800×600</div>
   </div>
 
   <script>
-    // Your stream URL (Zeno)
+    // === RADIO PLAYER LOGIC ===
     const STREAM_URL = "https://stream-177.zeno.fm/di9e67ju67iuv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJkaTllNjdqdTY3aXV2IiwiaG9zdCI6InN0cmVhbS0xNzcuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6Ik8wcm1FWlUwU3VpOTBhRHVsN3BMbmciLCJpYXQiOjE3NjA5OTI5NzgsImV4cCI6MTc2MDk5MzAzOH0.bdqTaWNSZebBiJqYDWrpB4aHM_mD6skhYiEeDC9xUIk";
 
-    const audio = document.getElementById("audio");
-    const playBtn = document.getElementById("playBtn");
-    const muteBtn = document.getElementById("muteBtn");
-    const vol = document.getElementById("vol");
-    const statusEl = document.getElementById("status");
+    const audio = document.getElementById('audio');
+    const playBtn = document.getElementById('playBtn');
+    const vol = document.getElementById('vol');
+    const statusEl = document.getElementById('status');
 
     let userWantsPlay = false;
-    let retryTimer = null;
-    let tries = 0;
+    let backoff = 0;
+    let retryTimer;
 
-    function setStatus(msg){ statusEl.textContent = msg; }
+    function setStatus(t){ statusEl.textContent = t; }
 
-    function setSrcWithBust(){
-      // cache-bust in case the stream/proxy caches
-      const bust = `cb=${Date.now()}`;
-      audio.src = STREAM_URL + (STREAM_URL.includes("?") ? "&" : "?") + bust;
+    function cacheBustUrl(u){
+      const bust = 'cb=' + Date.now();
+      return u + (u.includes('?') ? '&' : '?') + bust;
     }
 
-    async function start() {
+    async function start(){
       userWantsPlay = true;
-      playBtn.disabled = true;
-      setStatus("Connecting…");
-      setSrcWithBust();
+      setStatus('Connecting…');
+      audio.src = cacheBustUrl(STREAM_URL);
       try {
         await audio.play();
-        playBtn.textContent = "⏸ Pause";
-        setStatus("Playing.");
-        playBtn.disabled = false;
-        tries = 0;
-      } catch (err) {
-        playBtn.disabled = false;
-        setStatus("Click play to start (autoplay blocked).");
-        playBtn.textContent = "▶️ Play";
+        setStatus('Playing.');
+        backoff = 0;
+      } catch (e){
+        setStatus('Click PLAY to start.');
       }
     }
 
-    function pause() {
+    function pause(){
       userWantsPlay = false;
       audio.pause();
-      playBtn.textContent = "▶️ Play";
-      setStatus("Paused.");
+      setStatus('Paused.');
       clearTimeout(retryTimer);
     }
 
-    // Auto-reconnect on error/end if user wants to listen
-    function scheduleRetry() {
-      if (!userWantsPlay) return;
-      const delay = Math.min(1000 * Math.pow(1.6, tries++), 8000); // backoff up to 8s
-      setStatus(`Reconnecting in ${Math.round(delay/1000)}s…`);
+    function scheduleRetry(){
+      if(!userWantsPlay) return;
+      backoff = Math.min(backoff ? backoff * 1.7 : 800, 6000);
+      setStatus('Reconnecting in ' + Math.round(backoff/1000) + 's…');
       clearTimeout(retryTimer);
-      retryTimer = setTimeout(start, delay);
+      retryTimer = setTimeout(start, backoff);
     }
 
-    // UI handlers
-    playBtn.addEventListener("click", () => {
-      if (audio.paused) start(); else pause();
+    playBtn.addEventListener('click', () => {
+      if(audio.paused) start(); else pause();
     });
 
-    muteBtn.addEventListener("click", () => {
-      audio.muted = !audio.muted;
-      muteBtn.textContent = audio.muted ? "🔊" : "🔇";
-    });
+    vol.addEventListener('input', () => { audio.volume = parseFloat(vol.value); });
 
-    vol.addEventListener("input", () => {
-      audio.volume = parseFloat(vol.value);
-    });
+    audio.addEventListener('playing', () => setStatus('Playing.'));
+    audio.addEventListener('waiting', () => userWantsPlay && setStatus('Buffering…'));
+    audio.addEventListener('stalled', scheduleRetry);
+    audio.addEventListener('error', scheduleRetry);
+    audio.addEventListener('ended', scheduleRetry);
 
-    // Audio events
-    audio.addEventListener("playing", () => setStatus("Playing."));
-    audio.addEventListener("waiting", () => userWantsPlay && setStatus("Buffering…"));
-    audio.addEventListener("stalled", () => userWantsPlay && scheduleRetry());
-    audio.addEventListener("error", () => scheduleRetry());
-    audio.addEventListener("ended", () => scheduleRetry());
-
-    // Optional: media session (lock screen / OS controls)
-    if ("mediaSession" in navigator) {
+    // Optional: Media Session for OS controls (retro joke but useful!)
+    if ('mediaSession' in navigator) {
       navigator.mediaSession.metadata = new MediaMetadata({
-        title: "Live Radio",
-        artist: "Your Station",
-        album: "Live",
+        title: 'My Web Radio', artist: 'Live', album: 'On Air'
       });
-      navigator.mediaSession.setActionHandler("play", start);
-      navigator.mediaSession.setActionHandler("pause", pause);
-      navigator.mediaSession.setActionHandler("stop", pause);
+      navigator.mediaSession.setActionHandler('play', start);
+      navigator.mediaSession.setActionHandler('pause', pause);
+      navigator.mediaSession.setActionHandler('stop', pause);
     }
   </script>
 </body>
