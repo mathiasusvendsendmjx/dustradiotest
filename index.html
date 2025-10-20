@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Live Radio</title>
+  <style>
+    :root { --bg:#0b0c10; --card:#11131a; --fg:#e6e6e6; --muted:#9aa3af; }
+    *{ box-sizing:border-box }
+    body{
+      margin:0; min-height:100svh; display:grid; place-items:center;
+      background: radial-gradient(60% 60% at 50% 40%, #151826 0%, #0b0c10 70%);
+      color:var(--fg); font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
+    }
+    .wrap{
+      width: min(560px, 92vw); background:var(--card); padding:20px;
+      border-radius:18px; box-shadow: 0 10px 40px rgba(0,0,0,.4);
+    }
+    h1{ margin:0 0 6px; font-size:1.2rem }
+    .sub{ margin:0 0 14px; color:var(--muted); font-size:.95rem }
+    .controls{ display:flex; gap:10px; align-items:center; margin:10px 0 6px }
+    button{
+      appearance:none; border:0; border-radius:9999px; padding:12px 18px;
+      background:#2563eb; color:white; font-weight:600; cursor:pointer;
+    }
+    button[disabled]{ opacity:.6; cursor:not-allowed }
+    .status{ font-size:.9rem; color:var(--muted); margin-top:6px; min-height:1.2em }
+    .row{ display:flex; gap:12px; align-items:center; }
+    input[type="range"]{ width:100% }
+    .live-dot{ width:10px; height:10px; border-radius:50%; background:#ef4444; box-shadow:0 0 12px #ef4444aa; margin-right:6px }
+    .badge{ display:inline-flex; align-items:center; gap:6px; font-size:.8rem; color:#fca5a5; background:rgba(239,68,68,.08); padding:6px 10px; border-radius:999px }
+    a{ color:#9cc2ff; text-decoration:none }
+    .small{ font-size:.8rem; color:var(--muted); margin-top:10px }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="badge"><span class="live-dot"></span>Live</div>
+    <h1>My Radio Stream</h1>
+    <p class="sub">Tap play to listen.</p>
+
+    <div class="controls">
+      <button id="playBtn">▶️ Play</button>
+      <div class="row" style="flex:1">
+        <label for="vol" class="small" style="min-width:42px">Volume</label>
+        <input id="vol" type="range" min="0" max="1" step="0.01" value="0.9" />
+      </div>
+      <button id="muteBtn" title="Mute">🔇</button>
+    </div>
+
+    <div class="status" id="status">Idle.</div>
+
+    <!-- Hidden audio element -->
+    <audio id="audio" preload="none"></audio>
+
+    <p class="small">
+      If the stream stops, the player will try to reconnect automatically.
+    </p>
+  </div>
+
+  <script>
+    // Your stream URL (Zeno)
+    const STREAM_URL = "https://stream-177.zeno.fm/di9e67ju67iuv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJkaTllNjdqdTY3aXV2IiwiaG9zdCI6InN0cmVhbS0xNzcuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6Ik8wcm1FWlUwU3VpOTBhRHVsN3BMbmciLCJpYXQiOjE3NjA5OTI5NzgsImV4cCI6MTc2MDk5MzAzOH0.bdqTaWNSZebBiJqYDWrpB4aHM_mD6skhYiEeDC9xUIk";
+
+    const audio = document.getElementById("audio");
+    const playBtn = document.getElementById("playBtn");
+    const muteBtn = document.getElementById("muteBtn");
+    const vol = document.getElementById("vol");
+    const statusEl = document.getElementById("status");
+
+    let userWantsPlay = false;
+    let retryTimer = null;
+    let tries = 0;
+
+    function setStatus(msg){ statusEl.textContent = msg; }
+
+    function setSrcWithBust(){
+      // cache-bust in case the stream/proxy caches
+      const bust = `cb=${Date.now()}`;
+      audio.src = STREAM_URL + (STREAM_URL.includes("?") ? "&" : "?") + bust;
+    }
+
+    async function start() {
+      userWantsPlay = true;
+      playBtn.disabled = true;
+      setStatus("Connecting…");
+      setSrcWithBust();
+      try {
+        await audio.play();
+        playBtn.textContent = "⏸ Pause";
+        setStatus("Playing.");
+        playBtn.disabled = false;
+        tries = 0;
+      } catch (err) {
+        playBtn.disabled = false;
+        setStatus("Click play to start (autoplay blocked).");
+        playBtn.textContent = "▶️ Play";
+      }
+    }
+
+    function pause() {
+      userWantsPlay = false;
+      audio.pause();
+      playBtn.textContent = "▶️ Play";
+      setStatus("Paused.");
+      clearTimeout(retryTimer);
+    }
+
+    // Auto-reconnect on error/end if user wants to listen
+    function scheduleRetry() {
+      if (!userWantsPlay) return;
+      const delay = Math.min(1000 * Math.pow(1.6, tries++), 8000); // backoff up to 8s
+      setStatus(`Reconnecting in ${Math.round(delay/1000)}s…`);
+      clearTimeout(retryTimer);
+      retryTimer = setTimeout(start, delay);
+    }
+
+    // UI handlers
+    playBtn.addEventListener("click", () => {
+      if (audio.paused) start(); else pause();
+    });
+
+    muteBtn.addEventListener("click", () => {
+      audio.muted = !audio.muted;
+      muteBtn.textContent = audio.muted ? "🔊" : "🔇";
+    });
+
+    vol.addEventListener("input", () => {
+      audio.volume = parseFloat(vol.value);
+    });
+
+    // Audio events
+    audio.addEventListener("playing", () => setStatus("Playing."));
+    audio.addEventListener("waiting", () => userWantsPlay && setStatus("Buffering…"));
+    audio.addEventListener("stalled", () => userWantsPlay && scheduleRetry());
+    audio.addEventListener("error", () => scheduleRetry());
+    audio.addEventListener("ended", () => scheduleRetry());
+
+    // Optional: media session (lock screen / OS controls)
+    if ("mediaSession" in navigator) {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: "Live Radio",
+        artist: "Your Station",
+        album: "Live",
+      });
+      navigator.mediaSession.setActionHandler("play", start);
+      navigator.mediaSession.setActionHandler("pause", pause);
+      navigator.mediaSession.setActionHandler("stop", pause);
+    }
+  </script>
+</body>
+</html>
